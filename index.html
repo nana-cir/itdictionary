@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IT用語辞典（クリックで意味が出る）</title>
+  <style>
+    :root{
+      --bg:#f4f6f8; --card:#fff; --text:#111827; --muted:#6b7280;
+      --line:#e5e7eb; --accent:#2563eb; --accent2:#16a34a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:0 12px 24px}
+    header{padding:16px 14px 10px}
+    .title{margin:0;font-size:18px;font-weight:900}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+
+    .card{
+      background:var(--card); border:1px solid var(--line);
+      border-radius:16px; padding:14px; margin:12px 0;
+      box-shadow:0 2px 10px rgba(0,0,0,.04);
+    }
+
+    .usage{
+      border:1px solid rgba(37,99,235,.25);
+      background:rgba(37,99,235,.06);
+      border-radius:16px;
+      padding:12px 12px;
+      margin:10px 0 12px;
+    }
+    .usage h2{
+      margin:0 0 8px; font-size:14px; font-weight:900;
+      display:flex; align-items:center; gap:8px;
+    }
+    .usage p{margin:6px 0; color:var(--muted); font-size:13px; line-height:1.55}
+    .usage ol{margin:8px 0 0 18px; padding:0; color:var(--muted); font-size:13px; line-height:1.55}
+    .usage li{margin:4px 0}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row>*{flex:1}
+    input[type="search"]{
+      width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--line);
+      font-size:14px; outline:none; background:#fff;
+    }
+    input[type="search"]:focus{border-color:rgba(37,99,235,.45); box-shadow:0 0 0 4px rgba(37,99,235,.10)}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:9px 12px; border-radius:999px; border:1px solid var(--line);
+      background:#fff; color:var(--muted); font-size:12px;
+      user-select:none;
+    }
+    .count strong{color:var(--text)}
+    .hint .kbd{
+      font-family:ui-monospace,monospace; font-size:11px;
+      padding:3px 7px; border:1px solid var(--line); border-bottom-width:2px;
+      border-radius:8px; background:#fff; color:#111827;
+    }
+
+    .warn{
+      border:1px dashed rgba(37,99,235,.35);
+      background:rgba(37,99,235,.06);
+      padding:10px 12px; border-radius:14px; color:var(--muted); font-size:12px; line-height:1.5;
+      margin-top:10px;
+      display:none;
+    }
+
+    .grid{
+      display:grid; gap:10px;
+      grid-template-columns: repeat( auto-fit, minmax(240px, 1fr) );
+      margin-top:10px;
+    }
+
+    /* term cards using <details> (no modal) */
+    details.term{
+      border:1px solid var(--line); border-radius:14px;
+      background:linear-gradient(180deg,#fff,#fcfcfd);
+      overflow:hidden;
+    }
+    details.term[open]{border-color:rgba(37,99,235,.35); box-shadow:0 6px 18px rgba(37,99,235,.08)}
+    summary.termHead{
+      list-style:none;
+      cursor:pointer;
+      padding:12px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    summary.termHead::-webkit-details-marker{display:none}
+    .termTitle{
+      margin:0; font-size:15px; font-weight:900; letter-spacing:.2px;
+      display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    }
+    .badge{
+      font-size:11px; padding:4px 8px; border-radius:999px;
+      border:1px solid var(--line); color:var(--muted); background:#fff;
+      white-space:nowrap;
+    }
+    .meta{
+      margin-top:6px;color:var(--muted);font-size:12px;line-height:1.4
+    }
+    .termPreview{
+      padding-left:12px; padding-right:12px; padding-bottom:12px;
+      color:var(--muted); font-size:12px; line-height:1.45;
+    }
+    .termBody{
+      border-top:1px solid var(--line);
+      padding:12px;
+      background:#fff;
+    }
+    .kvs{display:grid; gap:10px; grid-template-columns:1fr}
+    .kv{border:1px solid var(--line); border-radius:14px; padding:12px; background:#fafafa}
+    .kv .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+    .kv .v{font-size:14px;line-height:1.55}
+    .tags{margin-top:6px; display:flex; flex-wrap:wrap; gap:6px}
+    .tag{
+      font-size:11px; padding:4px 8px; border-radius:999px;
+      background:rgba(22,163,74,.10); color:var(--accent2); border:1px solid rgba(22,163,74,.20);
+    }
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+
+    footer{color:var(--muted); font-size:12px; padding:0 14px 20px}
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <h1 class="title">IT用語辞典（クリックで意味が出る）</h1>
+    <p class="sub">terms.json を読み込む辞典です。用語はカードを開くと詳細が見えます（モーダルなし）。</p>
+
+    <!-- ✅ トップ下：使い方 -->
+    <section class="usage" aria-label="この辞典の使い方">
+      <h2>📘 この辞典の使い方</h2>
+      <p>
+        このIT用語辞典は、IT記事やニュースを読んでいて「これ何だっけ？」と思った言葉を、
+        あとから見返せるようにまとめた辞典です。むずかしい専門用語をそのまま並べるのではなく、
+        できるだけイメージしやすい言葉で説明することを意識しています。
+      </p>
+      <ol>
+        <li>IT記事や資料を読む</li>
+        <li>分からない言葉に出会う</li>
+        <li>この辞典で検索してみる</li>
+        <li>「あ、そういうことか」と分かればOK</li>
+      </ol>
+      <p>
+        ※ ニュース記事や他サイトの文章をそのまま転載することはありません。説明文はすべてオリジナルです。
+      </p>
+    </section>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <div class="row">
+        <input id="q" type="search" placeholder="検索（例：AWS / くらうど / セキュリティ / React / CRUD）" />
+        <div class="pill count">件数：<strong id="count">0</strong></div>
+        <div class="pill hint">操作：<span class="kbd">/</span>で検索へ / <span class="kbd">Esc</span>で閉じる</div>
+      </div>
+
+      <div id="warn" class="warn"></div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      ✅ 更新方法：terms.json に追記 → push → GitHub Pagesを開く → 自動で反映
+    </footer>
+  </main>
+
+<script>
+(() => {
+  let TERMS = [];
+
+  const $ = (id) => document.getElementById(id);
+  const grid = $("grid");
+  const q = $("q");
+  const count = $("count");
+  const warn = $("warn");
+
+  const normalize = (s) => (s || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+
+  function matchTerm(t, query){
+    if(!query) return true;
+    const hay = [
+      t.term, t.yomi, t.cat,
+      (t.tags || []).join(" "),
+      t.desc, t.one, t.id
+    ].join(" ");
+    return normalize(hay).includes(normalize(query));
+  }
+
+  function escapeHtml(str){
+    return (str ?? "").toString()
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function shorten(s, n){
+    s = (s||"").toString();
+    return s.length > n ? s.slice(0, n-1) + "…" : s;
+  }
+
+  function showWarn(msg){
+    warn.style.display = "block";
+    warn.textContent = msg;
+  }
+
+  function render(list){
+    grid.innerHTML = "";
+    count.textContent = list.length;
+
+    if(list.length === 0){
+      grid.innerHTML = `
+        <div style="grid-column:1/-1">
+          <details class="term" open>
+            <summary class="termHead">
+              <div>
+                <div class="termTitle">該当なし <span class="badge">検索を変えてみて</span></div>
+                <div class="meta">例：AWS / くらうど / セキュリティ / React / CRUD</div>
+              </div>
+            </summary>
+            <div class="termBody">
+              <div class="kv">
+                <div class="k">ヒント</div>
+                <div class="v">スペースや大文字小文字は気にせず検索できます。</div>
+              </div>
+            </div>
+          </details>
+        </div>
+      `;
+      return;
+    }
+
+    for(const t of list){
+      const el = document.createElement("details");
+      el.className = "term";
+
+      const tagsHtml = (t.tags && t.tags.length)
+        ? `<div class="tags">${t.tags.map(x => `<span class="tag">${escapeHtml(x)}</span>`).join("")}</div>`
+        : `<div class="v">—</div>`;
+
+      el.innerHTML = `
+        <summary class="termHead">
+          <div style="min-width:0;flex:1">
+            <div class="termTitle">
+              <span>${escapeHtml(t.term)}</span>
+              <span class="badge">${escapeHtml(t.cat || "未分類")}</span>
+            </div>
+            <div class="meta">
+              ${t.yomi ? `読み：<strong>${escapeHtml(t.yomi)}</strong>` : `読み：—`}
+            </div>
+          </div>
+          <span class="badge">開く</span>
+        </summary>
+
+        <div class="termPreview">
+          ${escapeHtml(shorten(t.one || t.desc || "", 90))}
+        </div>
+
+        <div class="termBody">
+          <div class="kvs">
+            <div class="kv">
+              <div class="k">意味（超やさしい）</div>
+              <div class="v">${escapeHtml(t.desc || "—")}</div>
+            </div>
+            <div class="kv">
+              <div class="k">ひとことで（たとえ）</div>
+              <div class="v">${escapeHtml(t.one || "—")}</div>
+            </div>
+            <div class="kv">
+              <div class="k">関連キーワード</div>
+              ${tagsHtml}
+            </div>
+            <div class="kv">
+              <div class="k">この辞典での表記（ID）</div>
+              <div class="v mono">${escapeHtml(t.id || "—")}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 開閉ラベルをちょい改善
+      el.addEventListener("toggle", () => {
+        const badge = el.querySelector("summary .badge:last-child");
+        if (badge) badge.textContent = el.open ? "閉じる" : "開く";
+      });
+
+      grid.appendChild(el);
+    }
+  }
+
+  // 検索
+  q.addEventListener("input", () => {
+    const query = q.value;
+    const list = TERMS.filter(t => matchTerm(t, query));
+    render(list);
+  });
+
+  // / キーで検索へ、Escで検索解除
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "/"){
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA");
+      if(!isTyping){
+        e.preventDefault();
+        q.focus();
+      }
+    }
+    if(e.key === "Escape"){
+      // まず検索欄をクリア（好みで）
+      if(document.activeElement === q && q.value){
+        q.value = "";
+        render(TERMS);
+        q.blur();
+      }else{
+        // 開いているdetailsを閉じる
+        document.querySelectorAll("details.term[open]").forEach(d => d.open = false);
+      }
+    }
+  });
+
+  // terms.json 読み込み
+  async function loadTerms(){
+    try{
+      const res = await fetch("./terms.json", { cache:"no-store" });
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if(!Array.isArray(data)) throw new Error("terms.json が配列(JSONの[])になっていません");
+
+      TERMS = data.map(x => ({
+        id: String(x.id ?? "").trim(),
+        term: String(x.term ?? "").trim(),
+        yomi: (x.yomi ?? "").toString().trim(),
+        cat: (x.cat ?? "").toString().trim(),
+        desc: (x.desc ?? "").toString().trim(),
+        one: (x.one ?? "").toString().trim(),
+        tags: Array.isArray(x.tags) ? x.tags.map(t => String(t)) : []
+      })).filter(x => x.term);
+
+      TERMS.sort((a,b) => (a.cat+a.term).localeCompare(b.cat+b.term, "ja"));
+      render(TERMS);
+
+    }catch(err){
+      render([]);
+      showWarn(
+        "terms.json を読み込めませんでした。ローカルのファイル直開きだと失敗する場合があります。"
+        + " GitHub Pagesで開くか、ローカルサーバーを使うと確実です。"
+        + "（エラー：" + (err?.message || err) + "）"
+      );
+    }
+  }
+
+  loadTerms();
+})();
+</script>
+</body>
+</html>
